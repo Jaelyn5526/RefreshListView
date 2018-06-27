@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <com.list.refresh.refreshview.HeaderView
+        android:id="@+id/refresh_headerview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+    <com.list.refresh.refreshview.CardLayout
+        android:id="@+id/target"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_marginTop="49dp"
+        android:paddingTop="10dp"
+        android:paddingRight="10dp"
+        android:paddingLeft="10dp" >
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="aaaaaaaa"
+            android:gravity="center"
+            android:background="#ffaeae"
+            android:layout_marginBottom="5dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="bbbbbbbb"
+            android:gravity="center"
+            android:background="#ffaeae"
+            android:layout_marginBottom="5dp"/>
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/refresh_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/white_bg"/>
+    </com.list.refresh.refreshview.CardLayout>
+</FrameLayout>
