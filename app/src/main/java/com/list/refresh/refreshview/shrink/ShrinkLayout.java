@@ -11,6 +11,7 @@ import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.LinearLayout;
@@ -53,7 +54,7 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent 
         public boolean onTouch(View v, MotionEvent event) {
             if (event.getAction() == MotionEvent.ACTION_UP
                     || event.getAction() == MotionEvent.ACTION_CANCEL){
-                finishSpinner(getChildAt(0).getY());
+                finishSpinner(getChildAt(0).getY(), 0);
             }
             return false;
         }
@@ -77,6 +78,7 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent 
         for (int i = 0; i < 3; i++) {
             childTop[i] = 0;
         }
+        mMaxFlingVelocity = ViewConfiguration.get(getContext()).getScaledMaximumFlingVelocity();
     }
 
     public void initDistance(boolean isBig) {
@@ -242,6 +244,8 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent 
     private boolean mIsBeingDragged = false;
     float mLastTouchY = 0;
     private int mInitialDownY;
+    private VelocityTracker mVelocityTracker;
+    private int mMaxFlingVelocity;
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
@@ -259,6 +263,7 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent 
         if (isTouchRecyclerView ) {
             return false;
         }
+
         Log.d(LOG, "onInterceptTouchEvent");
         if (!isEnabled()) {
             // Fail fast if we're not in a state where a swipe is possible
@@ -331,6 +336,10 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent 
             // Fail fast if we're not in a state where a swipe is possible
             return false;
         }
+        if (mVelocityTracker == null) {
+            mVelocityTracker = VelocityTracker.obtain();
+        }
+        mVelocityTracker.addMovement(ev);
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
@@ -387,16 +396,17 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent 
                     if (recyclerView.isShown() && recyclerView.getY() <= mDragCloseDistance){
                         recyclerView.onTouchEvent(ev);
                     } else {
-                        finishSpinner(getChildAt(0).getY());
+                        mVelocityTracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
+                        final float yvel = -mVelocityTracker.getYVelocity(mActivePointerId);
+                        finishSpinner(getChildAt(0).getY(), yvel);
                     }
                 }
                 mActivePointerId = INVALID_POINTER;
-                return false;
             }
+
             case MotionEvent.ACTION_CANCEL:
                 return false;
         }
-
         return true;
     }
 
@@ -418,12 +428,12 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent 
         }
     }
 
-     private void finishSpinner(float targetTop) {
+     private void finishSpinner(float targetTop, float YVelocity) {
         int starY = (int) getMoveOffsetView().getY();
-        if (targetTop <= mDragCloseLine){
+        if (targetTop + YVelocity <= mDragCloseLine){
             //关闭
             scroller.startScroll(0, starY, 0, mDragCloseDistance - starY);
-        } else if (targetTop <= mDragOpenLine){
+        } else if (targetTop + YVelocity <= mDragOpenLine){
             //展开
             scroller.startScroll(0, starY, 0, mDragRefreshDistance - starY);
         } else {
@@ -431,6 +441,10 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent 
             scroller.startScroll(0, starY, 0, mDragTotalDistance - starY);
         }
         invalidate();
+    }
+
+    private boolean canScrollVertically() {
+        return false;
     }
 
     @Override
