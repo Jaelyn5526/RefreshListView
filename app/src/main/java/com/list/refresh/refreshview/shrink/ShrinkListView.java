@@ -1,23 +1,13 @@
 package com.list.refresh.refreshview.shrink;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.v4.view.NestedScrollingParent;
-import android.support.v4.view.NestedScrollingParentHelper;
-import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
-import android.util.Log;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
-import android.widget.Scroller;
 
-import com.list.refresh.refreshview.CardLayout;
 import com.list.refresh.refreshview.HeaderView;
 import com.list.refresh.refreshview.R;
+
 
 public class ShrinkListView extends FrameLayout implements ShrinkLayout.OnShrinkScrollListener{
 
@@ -44,7 +34,7 @@ public class ShrinkListView extends FrameLayout implements ShrinkLayout.OnShrink
 
     private void initView() {
         mTarget = findViewById(R.id.target);
-        recyclerView = findViewById(R.id.refresh_recycler_view);
+        recyclerView = mTarget.getRecyclerView();
         headerView = findViewById(R.id.refresh_headerview);
         headerView.setCallHeadViewHeightChange(new HeaderView.CallHeadViewHeightChange() {
             @Override
@@ -58,8 +48,6 @@ public class ShrinkListView extends FrameLayout implements ShrinkLayout.OnShrink
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-       /* mTarget.setTop(0);
-        mTarget.offsetChildTopAndBottom(mCurrentTargetOffsetTop);*/
     }
 
     @Override

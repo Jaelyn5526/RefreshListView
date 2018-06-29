@@ -16,20 +16,23 @@ import android.view.ViewConfiguration;
 import android.widget.LinearLayout;
 import android.widget.Scroller;
 
-import java.net.PortUnreachableException;
+
+import com.list.refresh.refreshview.R;
 
 import static android.support.v4.widget.ViewDragHelper.INVALID_POINTER;
 
-public class ShrinkLayout extends LinearLayout implements NestedScrollingParent{
+public class ShrinkLayout extends LinearLayout implements NestedScrollingParent {
     private String LOG = "ShrinkLayout ";
 
     private int mTouchSlop;
 
-    private int[] childTop;
+    private int[] childTop = new int[3];
     private int DEFAULT_CLOSE_TOP = 10;
     private int DEFAULT_REFRESH_TOP = 90;
     private int DEFAULT_REFRESH_TOP_MIN = 71;
     private int DEFAULT_OPEN_TOP = 162;
+
+    private boolean isBig = true;
 
     private int mDragCloseDistance;
     private int mDragRefreshDistance;
@@ -65,9 +68,15 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent{
 
     public ShrinkLayout(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        setOrientation(VERTICAL);
+        inflate(context, R.layout.shrink_list_layout, this);
+        recyclerView = findViewById(R.id.refresh_recycler_view);
+        recyclerView.setOnTouchListener(onRecyclerListener);
         mParentHelper = new NestedScrollingParentHelper(this);
         scroller = new Scroller(getContext());
-
+        for (int i = 0; i < 3; i++) {
+            childTop[i] = 0;
+        }
     }
 
     public void initDistance(boolean isBig) {
@@ -108,16 +117,6 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent{
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
         int count = getChildCount();
-        childTop = new int[count];
-        if (recyclerView == null) {
-            for (int i = 0; i < count; i++) {
-                final View child = getChildAt(i);
-                if (child instanceof RecyclerView) {
-                    recyclerView = (RecyclerView) child;
-                    recyclerView.setOnTouchListener(onRecyclerListener);
-                }
-            }
-        }
         if (recyclerView.isShown()){
             for (int i = 0; i < count; i++) {
                 final View child = getChildAt(i);
@@ -126,6 +125,19 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent{
         }
         initDistance(true);
         offsetAllChildTopAndBottom(mDragRefreshDistance - childTop[0]);
+    }
+
+    boolean isAttachedToWindow = false;
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        isAttachedToWindow = true;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        isAttachedToWindow = false;
     }
 
     @Override
@@ -188,7 +200,7 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent{
     }
 
     private View getMoveOffsetView(){
-        if (recyclerView.isShown()) {
+        if (recyclerView != null && recyclerView.isShown()) {
             return recyclerView;
         } else {
             return getChildAt(0);
@@ -214,7 +226,6 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent{
                     child.offsetTopAndBottom(offsetDy);
                 }
             }
-            Log.d(LOG, "percent="+percent);
         } else {
             for (int i = 0; i < count; i++) {
                 child = getChildAt(i);
@@ -227,21 +238,96 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent{
     }
 
     private int mActivePointerId;
-    private boolean mReturningToStart = false;
+    private boolean isTouchRecyclerView = false;
     private boolean mIsBeingDragged = false;
     float mLastTouchY = 0;
     private int mInitialDownY;
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        final int action = ev.getActionMasked();
+        int pointerIndex;
+
+        if (action == MotionEvent.ACTION_DOWN ) {
+            if (isTouchDownRecyclerView(ev.getY())){
+                isTouchRecyclerView = true;
+                return false;
+            } else {
+                isTouchRecyclerView = false;
+            }
+        }
+        if (isTouchRecyclerView ) {
+            return false;
+        }
+        Log.d(LOG, "onInterceptTouchEvent");
+        if (!isEnabled()) {
+            // Fail fast if we're not in a state where a swipe is possible
+            return false;
+        }
+
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+//                setTargetOffsetTopAndBottom(mOriginalOffsetTop - mCircleView.getTop());
+                mActivePointerId = ev.getPointerId(0);
+                mIsBeingDragged = false;
+
+                pointerIndex = ev.findPointerIndex(mActivePointerId);
+                if (pointerIndex < 0) {
+                    return false;
+                }
+                if (isTouchDownRecyclerView(ev.getY())){
+                    return false;
+                }
+                mInitialDownY = (int) (ev.getY(pointerIndex) + 0.5f);
+                mLastTouchY = (int) (ev.getY() + 0.5f);
+
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+                if (mActivePointerId == INVALID_POINTER) {
+                    Log.e(LOG, "Got ACTION_MOVE event but don't have an active pointer id.");
+                    return false;
+                }
+
+                pointerIndex = ev.findPointerIndex(mActivePointerId);
+                if (pointerIndex < 0) {
+                    return false;
+                }
+                int y = (int) (ev.getY(pointerIndex) + 0.5f);
+                startDragging(y);
+               /* if (mTarget.getTop() != mDragCloseDistance && mIsBeingDragged){
+                    return true;
+                }*/
+                break;
+
+            case MotionEvent.ACTION_POINTER_UP:
+                onSecondaryPointerUp(ev);
+                break;
+
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                mIsBeingDragged = false;
+                mActivePointerId = INVALID_POINTER;
+                break;
+        }
+        Log.d(LOG, "sBeingDragged: " + mIsBeingDragged);
+        return mIsBeingDragged;
+    }
+
+    public boolean isTouchDownRecyclerView(float y){
+        if (recyclerView.getY() <= y && y <= recyclerView.getY()+recyclerView.getHeight()) {
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
         final int action = ev.getActionMasked();
         int pointerIndex = -1;
 
-        if (mReturningToStart && action == MotionEvent.ACTION_DOWN) {
-            mReturningToStart = false;
-        }
 
-        if (!isEnabled() || mReturningToStart ) {
+        if (!isEnabled()) {
             // Fail fast if we're not in a state where a swipe is possible
             return false;
         }
@@ -384,7 +470,14 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent{
     }
 
     public void upDateView(boolean isBig){
+        if (isBig == this.isBig){
+            return;
+        }
+        this.isBig = isBig;
         initDistance(isBig);
+        if (!isAttachedToWindow) {
+            return;
+        }
         if (getChildAt(0).getTop() != mDragCloseDistance){
             int targetTop = getChildAt(0).getTop();
             int starY = (int) getMoveOffsetView().getY();
@@ -402,5 +495,9 @@ public class ShrinkLayout extends LinearLayout implements NestedScrollingParent{
             offsetAllChildTopAndBottom(offset);
             invalidate();
         }
+    }
+
+    public RecyclerView getRecyclerView(){
+        return recyclerView;
     }
 }
