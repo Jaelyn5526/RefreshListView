@@ -10,14 +10,14 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Light.NoTitleBar">
         <activity android:name=".MainActivity">
-
-        </activity>
-        <activity android:name=".nest.NestActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity android:name=".shrink.ShrinkActivity">
+
         </activity>
     </application>
 

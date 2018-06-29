@@ -22,18 +22,6 @@ public class HeaderView extends RelativeLayout implements RefreshListView.Nested
 
     private String content = "查找可连接WiFi";
 
-    private boolean isShowChangeWifi = true;
-    private String lastSsid = "";
-
-    private int state = 0;
-    private final int STATE_ON_LINE = 0;
-    private final int STATE_SHOW_CHANGE = 1; //展示网络不佳的文案，处于该状态 只有Wi-Fi状态变化、用户手动刷新才能切换到其他状态
-    private final int STATE_SHOW_SIZE = 2; //展示wifi个数的文案
-    private final int STATE_REFRESH = 3; //刷新的状态
-
-    private int BTN_TAG_CONN = 0;
-    private int BTN_TAG_SEARCH = 1;
-
     private CoverView coverView;
     private ImageView imageBg;
 

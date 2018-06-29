@@ -1,10 +1,8 @@
 package com.list.refresh.refreshview;
 
 import android.content.Context;
-import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 
@@ -28,6 +26,7 @@ public class CardLayout extends LinearLayout implements RefreshListView.NestedSc
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int count = getChildCount();
+        childTop = new int[count];
         for (int i = 0; i < count; i++) {
             final View child = getChildAt(i);
             if (child instanceof RecyclerView){
@@ -46,7 +45,8 @@ public class CardLayout extends LinearLayout implements RefreshListView.NestedSc
         super.onLayout(changed, l, t, r, b);
         int count = getChildCount();
         childTop = new int[count];
-        for (int i = 0; i < count; i++) {
+        childTop[0] = 0;
+        for (int i = 1; i < count; i++) {
             final View child = getChildAt(i);
             childTop[i] = -child.getTop() + child.getPaddingTop();
         }
@@ -59,20 +59,18 @@ public class CardLayout extends LinearLayout implements RefreshListView.NestedSc
             return;
         }
         if (type == 0){
-            for (int i = 0; i < count; i++) {
+            for (int i = 1; i < count; i++) {
                 final View child = getChildAt(i);
                 if (child != null && child.getVisibility() != GONE){
-                    ViewCompat.offsetTopAndBottom(child, (int) (((1 - percent) * childTop[i]) - child.getTop()));
+                    child.setTranslationY((1 - percent) * childTop[i]);
                 }
             }
         } else {
-            for (int i = 0; i < count; i++) {
+            for (int i = 1; i < count; i++) {
                 final View child = getChildAt(i);
-                ViewCompat.offsetTopAndBottom(child, childTop[i] - child.getTop());
+                child.setTranslationY(0);
             }
         }
-
-
 
     }
 
@@ -89,17 +87,4 @@ public class CardLayout extends LinearLayout implements RefreshListView.NestedSc
         return false;
     }
 
-    public void offsetChildTopAndBottom(int offset){
-        int count = getChildCount();
-        for (int i = 0; i < count; i++) {
-            final View child = getChildAt(i);
-            if (child != null && child.getVisibility() != GONE){
-                ViewCompat.offsetTopAndBottom(child, offset);
-            }
-        }
-    }
-
-    public int getCurrTop(){
-        return getChildCount() > 0 ? getChildAt(0).getTop() + getTop(): 0;
-    }
 }
